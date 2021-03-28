@@ -12,8 +12,8 @@ module SimbolsHelper
   PR_TRUE           =  Token.new(7, 'true', 'PR_TRUE', /true|TRUE/, nil)
   PR_FALSE          =  Token.new(8, 'false', 'PR_FALSE', /false|FALSE/, nil)
   PR_NULL           =  Token.new(9, 'null', 'PR_NULL', /null|NULL/, nil)
-  LITERAL_STRING    =  Token.new(10, nil, 'LITERAL_CADENA', /".*"/, nil)
-  LITERAL_NUMBER    =  Token.new(11, nil, 'LITERAL_NUM', /[-+]?[0-9]+(\.[0-9]+)?+([eE][-+]?[0-9]+)?/, nil)
+  LITERAL_STRING    =  Token.new(10, nil, 'STRING', /".*"/, nil)
+  LITERAL_NUMBER    =  Token.new(11, nil, 'NUMBER', /[-+]?[0-9]+(\.[0-9]+)?+([eE][-+]?[0-9]+)?/, nil)
   REGEX_ALPHANUM    =  /[a-zA-Z]/
   REGEX_NUMERIC     =  /([-+])|([0-9])|(\.)|([eE])/
   DOUBLE_QUOTES     =  '"'
