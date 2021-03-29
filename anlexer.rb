@@ -5,15 +5,15 @@ class Lexer
   include SimbolsHelper
   DEFAULT_OUTPUT_FILE_NAME = 'output.txt'.freeze
   CURRENT_PATH = File.expand_path(File.dirname(__FILE__))
-  NC = "\e[0m" # No color
-  RED = "\e[0;31m" # Red color
+  NC = "\e[0m".freeze # No color
+  RED = "\e[0;31m".freeze # Red color
 
   def initialize
     super
     @file = nil
     @current_char = nil
     @chars_file = []
-    @line_number = 1
+    @line_number = 0
     @index = 0
     @str_to_evaluate = ''
     @errors = []
@@ -39,6 +39,7 @@ class Lexer
   def init_lexer
     @chars_file = @file.read.each_char.reduce([]) { |acc, el| acc << el }
     @file.close
+    @line_number += 1 unless @chars_file.empty?
     get_token
     build_output
   end
@@ -111,7 +112,7 @@ class Lexer
 
   def add_lexical_error(lexeme)
     @errors << @line_number
-    lexeme = lexeme.empty? ? 'UndefinedSimbol' : lexeme
+    lexeme = (lexeme.nil? or lexeme.empty?) ? 'UndefinedSimbol' : lexeme
     add_lexical_component("LEXICAL_ERROR='#{lexeme}' ")
   end
 
@@ -142,7 +143,10 @@ class Lexer
     @lexical_comp_list.select! { |token| token != LINE_BREAK && token != TABULATOR && token != SPACE }
     puts "[INFO]: Total de tokens = #{@lexical_comp_list.count}"
     puts "[INFO]: Tokens list: [#{@simbols_table.keys.reduce([]) { |acc, el| acc << "\"#{RED}#{el}#{NC}\"" }.join(', ')}]"
-    puts "[ERROR]: Ocurrieron errores en las sgtes lineas: [#{@errors.uniq!.join(', ')}]" unless @errors.empty?
+    unless @errors.empty?
+      @errors = @errors.uniq
+      puts "[ERROR]: Ocurrieron errores en las sgtes lineas: [#{@errors.join(', ')}]"
+    end
   end
 end
 

@@ -16,7 +16,7 @@ module SimbolsHelper
   LITERAL_NUMBER    =  Token.new(11, nil, 'NUMBER', /[-+]?[0-9]+(\.[0-9]+)?+([eE][-+]?[0-9]+)?/, nil)
   REGEX_ALPHANUM    =  /[a-zA-Z]/
   REGEX_NUMERIC     =  /([-+])|([0-9])|(\.)|([eE])/
-  DOUBLE_QUOTES     =  '"'
+  DOUBLE_QUOTES     =  '"'.freeze
   SPACE             =  ' '.freeze
   LINE_BREAK        =  "\n".freeze
   TABULATOR         =  "\t".freeze
