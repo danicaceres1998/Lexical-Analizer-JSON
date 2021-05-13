@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require_relative 'simbols_helper'
-require 'pry'
 
 class Lexer
   include SimbolsHelper
