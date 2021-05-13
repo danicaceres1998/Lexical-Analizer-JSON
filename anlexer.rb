@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require_relative 'simbols_helper'
+require 'pry'
 
 class Lexer
   include SimbolsHelper
@@ -19,6 +20,11 @@ class Lexer
     @errors = []
   end
 
+  def get_tokens(file)
+    @file = file
+    init_lexer(false)
+  end
+
   def main
     if ARGV.first.nil?
       puts '[ERROR]: Debe de pasar como parametro el path al archivo fuente !'
@@ -26,22 +32,22 @@ class Lexer
     else
       begin
         @file = File.open(ARGV.first)
-      rescue Errno::ENOENT => e
+      rescue Errno::ENOENT
         puts "[ERROR]: El archivo #{ARGV.first} no existe !"
         exit 1
       end
-      init_lexer
+      init_lexer(true)
     end
   end
 
   private
 
-  def init_lexer
+  def init_lexer(lexer_mode)
     @chars_file = @file.read.each_char.reduce([]) { |acc, el| acc << el }
     @file.close
     @line_number += 1 unless @chars_file.empty?
     get_token
-    build_output
+    lexer_mode ? build_output : return_tokens
   end
 
   def get_token
@@ -65,38 +71,11 @@ class Lexer
       elsif @current_char.match? TWO_POINTS.regular_expresion
         token_matched(TWO_POINTS.lexeme, TWO_POINTS)
       elsif @current_char.match? REGEX_ALPHANUM
-        rebuild_str_to_evaluate
-        loop do
-          @index += 1
-          @current_char = @chars_file[@index]
-          if not @current_char.match? REGEX_ALPHANUM or @current_char.nil?
-            @index -= 1
-            break
-          end
-          @str_to_evaluate += @current_char
-        end
-        validate_token(@str_to_evaluate, [PR_TRUE, PR_FALSE, PR_NULL])
+        validate_alpha_num
       elsif @current_char == DOUBLE_QUOTES
-        rebuild_str_to_evaluate
-        loop do
-          @index += 1
-          @current_char = @chars_file[@index]
-          @str_to_evaluate += @current_char
-          break if @current_char == DOUBLE_QUOTES or @current_char.nil?
-        end
-        validate_token(@str_to_evaluate, [LITERAL_STRING])
+        validate_string
       elsif @current_char.match? REGEX_NUMERIC
-        rebuild_str_to_evaluate
-        loop do
-          @index += 1
-          @current_char = @chars_file[@index]
-          if not @current_char.match? REGEX_NUMERIC or @current_char.nil?
-            @index -= 1
-            break
-          end
-          @str_to_evaluate += @current_char
-        end
-        validate_token(@str_to_evaluate, [LITERAL_NUMBER])
+        validate_numeric
       else
         add_lexical_error(@current_char)
       end
@@ -107,7 +86,7 @@ class Lexer
 
   def token_matched(lexeme, token_type)
     add_token(lexeme, token_type)
-    add_lexical_component("#{token_type.lexical_component} ")
+    add_lexical_component({ token: lexeme, lex_comp: token_type.lexical_component })
   end
 
   def add_lexical_error(lexeme)
@@ -116,16 +95,52 @@ class Lexer
     add_lexical_component("LEXICAL_ERROR='#{lexeme}' ")
   end
 
-  def rebuild_str_to_evaluate
-    @str_to_evaluate.clear
-    @str_to_evaluate += @current_char
+  def validate_alpha_num
+    str_to_evaluate = ''
+    str_to_evaluate += @current_char
+    loop do
+      @index += 1
+      @current_char = @chars_file[@index]
+      if not @current_char.match? REGEX_ALPHANUM or @current_char.nil?
+        @index -= 1
+        break
+      end
+      str_to_evaluate += @current_char
+    end
+    validate_token(str_to_evaluate, [PR_TRUE, PR_FALSE, PR_NULL])
+  end
+
+  def validate_string
+    str_to_evaluate = ''
+    str_to_evaluate += @current_char
+    loop do
+      @index += 1
+      @current_char = @chars_file[@index]
+      str_to_evaluate += @current_char
+      break if @current_char == DOUBLE_QUOTES or @current_char.nil?
+    end
+    validate_token(str_to_evaluate, [LITERAL_STRING])
+  end
+
+  def validate_numeric
+    str_to_evaluate = ''
+    str_to_evaluate += @current_char
+    loop do
+      @index += 1
+      @current_char = @chars_file[@index]
+      if not @current_char.match? REGEX_NUMERIC or @current_char.nil?
+        @index -= 1
+        break
+      end
+      str_to_evaluate += @current_char
+    end
+    validate_token(str_to_evaluate, [LITERAL_NUMBER])
   end
 
   def validate_token(lexeme, token_types)
     token_types.each do |token_type|
       if lexeme.match? token_type.regular_expresion
-        token_matched(@str_to_evaluate, token_type)
-        @str_to_evaluate.clear
+        token_matched(lexeme, token_type)
         return
       end
     end
@@ -135,12 +150,13 @@ class Lexer
   def build_output
     new_file = File.open(DEFAULT_OUTPUT_FILE_NAME, 'w')
     @lexical_comp_list.each do |token|
-      print(token.include?('ERROR') ? "#{RED}#{token}#{NC}" : token)
-      new_file.write(token)
+      t = token.class == String ? token : token[:lex_comp]
+      print(token.include?('ERROR') ? "#{RED}#{t}#{NC}" : "#{t} ")
+      new_file.write(t)
     end
     puts "\n[INFO]: El resultado se encuentra en -> #{CURRENT_PATH + "/#{DEFAULT_OUTPUT_FILE_NAME}"}"
     puts "[INFO]: Total de lineas = #{@line_number}"
-    @lexical_comp_list.select! { |token| token != LINE_BREAK && token != TABULATOR && token != SPACE }
+    clean_lexical_comp_list
     puts "[INFO]: Total de tokens = #{@lexical_comp_list.count}"
     puts "[INFO]: Tokens list: [#{@simbols_table.keys.reduce([]) { |acc, el| acc << "\"#{RED}#{el}#{NC}\"" }.join(', ')}]"
     unless @errors.empty?
@@ -148,7 +164,24 @@ class Lexer
       puts "[ERROR]: Ocurrieron errores en las sgtes lineas: [#{@errors.join(', ')}]"
     end
   end
+
+  def clean_lexical_comp_list
+    @lexical_comp_list.select! do |token|
+      if token.class == String
+        token != LINE_BREAK && token != TABULATOR && token != SPACE
+      else
+        true
+      end
+    end
+  end
+
+  def return_tokens
+    clean_lexical_comp_list
+    @lexical_comp_list.reduce([]) { |acc, el| acc << el[:token] }
+  end
 end
 
 ### MAIN ###
-Lexer.new.main
+if __FILE__ == $0
+  Lexer.new.main
+end

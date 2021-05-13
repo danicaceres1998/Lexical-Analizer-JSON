@@ -1,0 +1,13 @@
+json                   =>  element
+element                =>  object | array
+array                  =>  [clean-array]
+clean-array            =>  element-list | EOF
+element-list           =>  element clean-list
+clean-list             =>  , element | EOF
+object                 =>  {clean-object}
+clean-object           =>  attributes-list | EOF
+attributes-list        =>  attribute clean-attributes-list
+clean-attributes-list  =>  , attribute | EOF
+attribute              =>  attribute-name : attribute-value
+attribute-name         =>  string
+attribute-value        =>  element | string | number | true | false | null
