@@ -149,8 +149,8 @@ class Lexer
   def build_output
     new_file = File.open(DEFAULT_OUTPUT_FILE_NAME, 'w')
     @lexical_comp_list.each do |token|
-      t = token.class == String ? token : token[:lex_comp]
-      print(token.include?('ERROR') ? "#{RED}#{t}#{NC}" : "#{t} ")
+      t = token.class == String ? token : "#{token[:lex_comp]} "
+      print(token.include?('ERROR') ? "#{RED}#{t}#{NC}" : t)
       new_file.write(t)
     end
     puts "\n[INFO]: El resultado se encuentra en -> #{CURRENT_PATH + "/#{DEFAULT_OUTPUT_FILE_NAME}"}"
