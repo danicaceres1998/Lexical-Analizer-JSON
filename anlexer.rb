@@ -175,6 +175,10 @@ class Lexer
   end
 
   def return_tokens
+    unless @errors.empty?
+      build_output
+      raise StandardError.new '[ERROR]: Ocurrio un error lexico'
+    end
     clean_lexical_comp_list
     {
       tokens: @lexical_comp_list.reduce([]) { |acc, el| acc << el[:token] },

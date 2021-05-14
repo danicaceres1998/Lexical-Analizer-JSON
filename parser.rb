@@ -39,6 +39,8 @@ class Parser
     @current_token = @tokens.first
     json unless @tokens.empty?
     puts @errors.empty? ? '[INFO]: No ocurrio ningun error de compilacion' : '[ERROR]: Ocurrieron errores de compilacion'
+  rescue StandardError => e
+    puts e.message
   end
 
   def json
