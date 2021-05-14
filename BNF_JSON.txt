@@ -1,13 +1,44 @@
+### BNF ###
 json                   =>  element
 element                =>  object | array
 array                  =>  [clean-array]
 clean-array            =>  element-list | EOF
 element-list           =>  element clean-list
-clean-list             =>  , element | EOF
+clean-list             =>  , element-list | EOF
 object                 =>  {clean-object}
 clean-object           =>  attributes-list | EOF
 attributes-list        =>  attribute clean-attributes-list
-clean-attributes-list  =>  , attribute | EOF
+clean-attributes-list  =>  , attributes-list | EOF
 attribute              =>  attribute-name : attribute-value
 attribute-name         =>  string
 attribute-value        =>  element | string | number | true | false | null
+
+### Conjunto primero de los No-Terminales ###
+P(json)                     =  { '[', '{' }
+P(element)                  =  { '[', '{' }
+P(array)                    =  { '[' }
+P(clean-array)              =  { '[', '{', EOF }
+P(element-list)             =  { '[', '{' }
+P(clean-list)               =  { ',', EOF }
+P(object)                   =  { '{' }
+P(clean-object)             =  { string, EOF }
+P(attributes-list)          =  { string }
+P(clean-attributes-list)    =  { ',', EOF }
+P(attribute)                =  { string }
+P(attribute-name)           =  { string }
+P(attribute-value)          =  { '[', '{', string, number, true, false, null }
+
+### Conjunto Siguiente de los No-Terminales ###
+S(json)                     =  { EOF }
+S(element)                  =  { ',', EOF }
+S(array)                    =  { ',', EOF }
+S(clean-array)              =  { ']' }
+S(element-list)             =  { ']' }
+S(clean-list)               =  { ']' }
+S(object)                   =  { ',', EOF }
+S(clean-object)             =  { '}' }
+S(attributes-list)          =  { '}' }
+S(clean-attributes-list)    =  { '}' }
+S(attribute)                =  { ',', EOF }
+S(attribute-name)           =  { ':' }
+S(attribute-value)          =  { ',', EOF }

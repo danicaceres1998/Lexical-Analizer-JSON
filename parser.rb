@@ -1,4 +1,5 @@
 require_relative 'anlexer'
+require 'pry'
 
 class Parser
   include SimbolsHelper
@@ -35,102 +36,156 @@ class Parser
   def init_parser
     @tokens = @lexer.get_tokens(@file)
     @current_token = @tokens.first
-    json
+    json unless @tokens.empty?
     puts @errors
   end
 
   def json
-    element
+    check_input(FIRST_GROUP[:json], NEXT_GROUP[:json], false)
+    unless search_in_group(NEXT_GROUP[:json])
+      element
+      check_input(NEXT_GROUP[:json], FIRST_GROUP[:json], false)
+    end
   end
 
   def element
-    byebug
-    case @current_token
-    when L_CURLY_BRACE.lexeme
-      object
-    when L_SQUARE_BRACKET.lexeme
-      array
-    else
-      add_error
+    check_input(FIRST_GROUP[:element], NEXT_GROUP[:element], false)
+    unless search_in_group(NEXT_GROUP[:element])
+      case @current_token
+      when L_CURLY_BRACE.lexeme
+        object
+      when L_SQUARE_BRACKET.lexeme
+        array
+      else
+        add_error
+      end
+      check_input(NEXT_GROUP[:element], FIRST_GROUP[:element], false)
     end
   end
 
   def object
-    byebug
-    match(@current_token, L_CURLY_BRACE)
-    clean_object
-    match(@current_token, R_CURLY_BRACE)
+    check_input(FIRST_GROUP[:object], NEXT_GROUP[:object], false)
+    unless search_in_group(NEXT_GROUP[:object])
+      match(@current_token, L_CURLY_BRACE)
+      clean_object
+      match(@current_token, R_CURLY_BRACE)
+      check_input(NEXT_GROUP[:object], FIRST_GROUP[:object], false)
+    end
   end
 
   def clean_object
-    byebug
-    attributes_list unless @current_token.match? R_CURLY_BRACE.regular_expresion
+    check_input(FIRST_GROUP[:clean_object], NEXT_GROUP[:clean_object], true)
+    unless search_in_group(NEXT_GROUP[:clean_object])
+      attributes_list unless @current_token.match? R_CURLY_BRACE.regular_expresion
+      check_input(NEXT_GROUP[:clean_object], FIRST_GROUP[:clean_object], false)
+    end
   end
 
   def attributes_list
-    byebug
-    attribute_name
-    match(@current_token, TWO_POINTS)
-    attribute_value
+    check_input(FIRST_GROUP[:attributes_list], NEXT_GROUP[:attributes_list], false)
+    unless search_in_group(NEXT_GROUP[:attributes_list])
+      attribute
+      clean_attribute_list
+      check_input(NEXT_GROUP[:attributes_list], FIRST_GROUP[:attributes_list], false)
+    end
+  end
+
+  def clean_attribute_list
+    check_input(FIRST_GROUP[:clean_attributes_list], NEXT_GROUP[:clean_attributes_list], true)
+    unless search_in_group(NEXT_GROUP[:clean_attributes_list])
+      if @current_token.match? COMA.regular_expresion
+        match(@current_token, COMA)
+        attributes_list
+      end
+      byebug
+      check_input(NEXT_GROUP[:clean_attributes_list], FIRST_GROUP[:clean_attributes_list], false)
+    end
+  end
+
+  def attribute
+    check_input(FIRST_GROUP[:attribute], NEXT_GROUP[:attribute], false)
+    unless search_in_group(NEXT_GROUP[:attribute])
+      attribute_name
+      match(@current_token, TWO_POINTS)
+      attribute_value
+      check_input(NEXT_GROUP[:attribute], FIRST_GROUP[:attribute], false)
+    end
   end
 
   def attribute_name
-    byebug
-    match(@current_token, LITERAL_STRING)
+    check_input(FIRST_GROUP[:attribute_name], NEXT_GROUP[:attribute_name], false)
+    unless search_in_group(NEXT_GROUP[:attribute_name])
+      match(@current_token, LITERAL_STRING)
+      check_input(NEXT_GROUP[:attribute_name], FIRST_GROUP[:attribute_name], false)
+    end
   end
 
   def attribute_value
-    byebug
-    if @current_token.match? LITERAL_STRING.regular_expresion
-      match(@current_token, LITERAL_STRING)
-      return
-    elsif @current_token.match? LITERAL_NUMBER.regular_expresion
-      match(@current_token, LITERAL_NUMBER)
-      return
-    elsif @current_token.match? PR_TRUE.regular_expresion
-      match(@current_token, PR_TRUE)
-      return
-    elsif @current_token.match? PR_FALSE.regular_expresion
-      match(@current_token, PR_FALSE)
-      return
-    elsif @current_token.match? PR_NULL.regular_expresion
-      match(@current_token, PR_NULL)
-      return
-    else
-      element
-      return
+    check_input(FIRST_GROUP[:attribute_value], NEXT_GROUP[:attribute_value], false)
+    unless search_in_group(NEXT_GROUP[:attribute_value])
+      if @current_token.match? L_SQUARE_BRACKET.regular_expresion
+        element
+      elsif @current_token.match? L_CURLY_BRACE.regular_expresion
+        element
+      elsif @current_token.match? LITERAL_STRING.regular_expresion
+        match(@current_token, LITERAL_STRING)
+      elsif @current_token.match? LITERAL_NUMBER.regular_expresion
+        match(@current_token, LITERAL_NUMBER)
+      elsif @current_token.match? PR_TRUE.regular_expresion
+        match(@current_token, PR_TRUE)
+      elsif @current_token.match? PR_FALSE.regular_expresion
+        match(@current_token, PR_FALSE)
+      elsif @current_token.match? PR_NULL.regular_expresion
+        match(@current_token, PR_NULL)
+      else
+        add_error
+      end
+      check_input(NEXT_GROUP[:attribute_value], FIRST_GROUP[:attribute_value], false)
     end
-    add_error
   end
 
   def array
-    byebug
-    match(@current_token, L_SQUARE_BRACKET)
-    clean_array
-    match(@current_token, R_SQUARE_BRACKET)
+    check_input(FIRST_GROUP[:array], NEXT_GROUP[:array], false)
+    unless search_in_group(NEXT_GROUP[:array])
+      match(@current_token, L_SQUARE_BRACKET)
+      clean_array
+      match(@current_token, R_SQUARE_BRACKET)
+      check_input(NEXT_GROUP[:array], FIRST_GROUP[:array], false)
+    end
   end
 
   def clean_array
     byebug
-    element_list unless @current_token.match? R_SQUARE_BRACKET.regular_expresion
+    check_input(FIRST_GROUP[:clean_array], NEXT_GROUP[:clean_array], true)
+    unless search_in_group(NEXT_GROUP[:clean_array])
+      element_list unless @current_token.match? R_SQUARE_BRACKET.regular_expresion
+      check_input(NEXT_GROUP[:clean_array], FIRST_GROUP[:clean_array], false)
+    end
   end
 
   def element_list
     byebug
-    element
-    clean_list
+    check_input(FIRST_GROUP[:element_list], NEXT_GROUP[:element_list], false)
+    unless search_in_group(NEXT_GROUP[:element_list])
+      element
+      clean_list
+      check_input(NEXT_GROUP[:element_list], FIRST_GROUP[:element_list], false)
+    end
   end
 
   def clean_list
-    byebug
-    if @current_token.match? COMA.regular_expresion
-      match(@current_token, COMA)
-      element_list
+    check_input(FIRST_GROUP[:clean_list], NEXT_GROUP[:clean_list], true)
+    unless search_in_group(NEXT_GROUP[:clean_list])
+      if @current_token.match? COMA.regular_expresion
+        match(@current_token, COMA)
+        element_list
+      end
+      check_input(NEXT_GROUP[:clean_list], FIRST_GROUP[:clean_list], false)
     end
   end
 
   def match(token, token_type)
-    byebug
+    return if token.nil?
     if token.match? token_type.regular_expresion
       next_token
     else
@@ -139,14 +194,67 @@ class Parser
   end
 
   def add_error
-    byebug
-    @errors << "#{@current_token}: #{@index}"
-    next_token
+    print_error
   end
 
   def next_token
     @index += 1
     @current_token = @tokens[@index]
+  end
+
+  def check_input(firsts, follows, optional)
+    return if search_in_group(firsts) || optional
+    byebug
+    print_error
+    scan_to(firsts + follows)
+  end
+
+  def scan_to(synchset)
+    byebug
+    status = false
+    loop do
+      synchset.each do |token|
+        if @current_token.nil? and token.regular_expresion.nil?
+          status = true
+          break
+        elsif @current_token.nil?
+          status = true
+          break
+        elsif token.regular_expresion.nil?
+          if @current_token == token.lexeme
+            status = true
+            break
+          end
+        else
+          if @current_token.match? token.regular_expresion 
+            status = true
+            break
+          end
+        end
+      end
+      break if status
+      next_token
+    end
+  end
+
+  def print_error
+    @errors << "#{@current_token}: #{@index}"
+    puts "Ocurrio un error en la linea: #{@index}"
+  end
+
+  def search_in_group(group)
+    group.each do |f_t|
+      if @current_token.nil? and f_t.regular_expresion.nil?
+        return true
+      elsif @current_token.nil?
+        return true
+      elsif f_t.regular_expresion.nil?
+        return true if @current_token == f_t.lexeme
+      else
+        return true if @current_token.match? f_t.regular_expresion
+      end
+    end
+    false
   end
 end
 

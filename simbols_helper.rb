@@ -12,14 +12,46 @@ module SimbolsHelper
   PR_TRUE           =  Token.new(7, 'true', 'PR_TRUE', /true|TRUE/, nil)
   PR_FALSE          =  Token.new(8, 'false', 'PR_FALSE', /false|FALSE/, nil)
   PR_NULL           =  Token.new(9, 'null', 'PR_NULL', /null|NULL/, nil)
-  LITERAL_STRING    =  Token.new(10, nil, 'STRING', /".*"/, nil)
-  LITERAL_NUMBER    =  Token.new(11, nil, 'NUMBER', /[-+]?[0-9]+(\.[0-9]+)?+([eE][-+]?[0-9]+)?/, nil)
+  LITERAL_STRING    =  Token.new(10, '', 'STRING', /".*"/, nil)
+  LITERAL_NUMBER    =  Token.new(11, '', 'NUMBER', /[-+]?[0-9]+(\.[0-9]+)?+([eE][-+]?[0-9]+)?/, nil)
+  EOF               =  Token.new(12, nil, 'EOF', nil, nil)
   REGEX_ALPHANUM    =  /[a-zA-Z]/
   REGEX_NUMERIC     =  /([-+])|([0-9])|(\.)|([eE])/
   DOUBLE_QUOTES     =  '"'.freeze
   SPACE             =  ' '.freeze
   LINE_BREAK        =  "\n".freeze
   TABULATOR         =  "\t".freeze
+  FIRST_GROUP = {
+    json: [L_SQUARE_BRACKET, L_CURLY_BRACE],
+    element: [L_SQUARE_BRACKET, L_CURLY_BRACE],
+    array: [L_SQUARE_BRACKET],
+    clean_array: [L_SQUARE_BRACKET, L_CURLY_BRACE, EOF],
+    element_list: [L_SQUARE_BRACKET, L_CURLY_BRACE],
+    clean_list: [COMA, EOF],
+    object: [L_CURLY_BRACE],
+    clean_object: [LITERAL_STRING, EOF],
+    attributes_list: [LITERAL_STRING],
+    clean_attributes_list: [COMA, EOF],
+    attribute: [LITERAL_STRING],
+    attribute_name: [LITERAL_STRING],
+    attribute_value: [L_SQUARE_BRACKET, L_CURLY_BRACE, LITERAL_STRING, LITERAL_NUMBER, PR_TRUE, PR_FALSE, PR_NULL]
+  }
+  
+  NEXT_GROUP = {
+    json: [EOF],
+    element: [COMA, EOF],
+    array: [COMA, EOF],
+    clean_array: [R_SQUARE_BRACKET],
+    element_list: [R_SQUARE_BRACKET],
+    clean_list: [R_SQUARE_BRACKET],
+    object: [COMA, EOF],
+    clean_object: [R_CURLY_BRACE],
+    attributes_list: [R_CURLY_BRACE],
+    clean_attributes_list: [R_CURLY_BRACE],
+    attribute: [COMA, EOF],
+    attribute_name: [TWO_POINTS],
+    attribute_value: [COMA, EOF]
+  }
 
   def initialize(*args)
     super(*args)
