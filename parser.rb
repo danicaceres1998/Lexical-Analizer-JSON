@@ -1,5 +1,4 @@
 require_relative 'anlexer'
-require 'pry'
 
 class Parser
   include SimbolsHelper
@@ -9,8 +8,8 @@ class Parser
     @file = nil
     @lexer = Lexer.new
     @tokens = nil
+    @line_numbers = nil
     @current_token = nil
-    @line_number = 0
     @index = 0
     @str_to_evaluate = ''
     @errors = []
@@ -34,22 +33,24 @@ class Parser
   private
 
   def init_parser
-    @tokens = @lexer.get_tokens(@file)
+    lexer_tokens = @lexer.get_tokens(@file)
+    @tokens = lexer_tokens[:tokens]
+    @line_numbers = lexer_tokens[:line_number]
     @current_token = @tokens.first
     json unless @tokens.empty?
-    puts @errors
+    puts @errors.empty? ? '[INFO]: No ocurrio ningun error de compilacion' : '[ERROR]: Ocurrieron errores de compilacion'
   end
 
   def json
-    check_input(FIRST_GROUP[:json], NEXT_GROUP[:json], false)
+    check_input(FIRST_GROUP[:json], NEXT_GROUP[:json])
     unless search_in_group(NEXT_GROUP[:json])
       element
-      check_input(NEXT_GROUP[:json], FIRST_GROUP[:json], false)
+      check_input(NEXT_GROUP[:json], FIRST_GROUP[:json])
     end
   end
 
   def element
-    check_input(FIRST_GROUP[:element], NEXT_GROUP[:element], false)
+    check_input(FIRST_GROUP[:element], NEXT_GROUP[:element])
     unless search_in_group(NEXT_GROUP[:element])
       case @current_token
       when L_CURLY_BRACE.lexeme
@@ -59,69 +60,68 @@ class Parser
       else
         add_error
       end
-      check_input(NEXT_GROUP[:element], FIRST_GROUP[:element], false)
+      check_input(NEXT_GROUP[:element], FIRST_GROUP[:element], optional=true)
     end
   end
 
   def object
-    check_input(FIRST_GROUP[:object], NEXT_GROUP[:object], false)
+    check_input(FIRST_GROUP[:object], NEXT_GROUP[:object])
     unless search_in_group(NEXT_GROUP[:object])
       match(@current_token, L_CURLY_BRACE)
       clean_object
       match(@current_token, R_CURLY_BRACE)
-      check_input(NEXT_GROUP[:object], FIRST_GROUP[:object], false)
+      check_input(NEXT_GROUP[:object], FIRST_GROUP[:object], optional=true)
     end
   end
 
   def clean_object
-    check_input(FIRST_GROUP[:clean_object], NEXT_GROUP[:clean_object], true)
     unless search_in_group(NEXT_GROUP[:clean_object])
-      attributes_list unless @current_token.match? R_CURLY_BRACE.regular_expresion
-      check_input(NEXT_GROUP[:clean_object], FIRST_GROUP[:clean_object], false)
+      check_input(FIRST_GROUP[:clean_object], NEXT_GROUP[:clean_object])
+      attributes_list # unless @current_token.match? R_CURLY_BRACE.regular_expresion
+      check_input(NEXT_GROUP[:clean_object], FIRST_GROUP[:clean_object])
     end
   end
 
   def attributes_list
-    check_input(FIRST_GROUP[:attributes_list], NEXT_GROUP[:attributes_list], false)
+    check_input(FIRST_GROUP[:attributes_list], NEXT_GROUP[:attributes_list])
     unless search_in_group(NEXT_GROUP[:attributes_list])
       attribute
       clean_attribute_list
-      check_input(NEXT_GROUP[:attributes_list], FIRST_GROUP[:attributes_list], false)
+      check_input(NEXT_GROUP[:attributes_list], FIRST_GROUP[:attributes_list])
     end
   end
 
   def clean_attribute_list
-    check_input(FIRST_GROUP[:clean_attributes_list], NEXT_GROUP[:clean_attributes_list], true)
     unless search_in_group(NEXT_GROUP[:clean_attributes_list])
+      check_input(FIRST_GROUP[:clean_attributes_list], NEXT_GROUP[:clean_attributes_list], optional=true)
       if @current_token.match? COMA.regular_expresion
         match(@current_token, COMA)
         attributes_list
       end
-      byebug
-      check_input(NEXT_GROUP[:clean_attributes_list], FIRST_GROUP[:clean_attributes_list], false)
+      check_input(NEXT_GROUP[:clean_attributes_list], FIRST_GROUP[:clean_attributes_list])
     end
   end
 
   def attribute
-    check_input(FIRST_GROUP[:attribute], NEXT_GROUP[:attribute], false)
+    check_input(FIRST_GROUP[:attribute], NEXT_GROUP[:attribute])
     unless search_in_group(NEXT_GROUP[:attribute])
       attribute_name
       match(@current_token, TWO_POINTS)
       attribute_value
-      check_input(NEXT_GROUP[:attribute], FIRST_GROUP[:attribute], false)
+      check_input(NEXT_GROUP[:attribute], FIRST_GROUP[:attribute], optional=true)
     end
   end
 
   def attribute_name
-    check_input(FIRST_GROUP[:attribute_name], NEXT_GROUP[:attribute_name], false)
+    check_input(FIRST_GROUP[:attribute_name], NEXT_GROUP[:attribute_name])
     unless search_in_group(NEXT_GROUP[:attribute_name])
       match(@current_token, LITERAL_STRING)
-      check_input(NEXT_GROUP[:attribute_name], FIRST_GROUP[:attribute_name], false)
+      check_input(NEXT_GROUP[:attribute_name], FIRST_GROUP[:attribute_name])
     end
   end
 
   def attribute_value
-    check_input(FIRST_GROUP[:attribute_value], NEXT_GROUP[:attribute_value], false)
+    check_input(FIRST_GROUP[:attribute_value], NEXT_GROUP[:attribute_value])
     unless search_in_group(NEXT_GROUP[:attribute_value])
       if @current_token.match? L_SQUARE_BRACKET.regular_expresion
         element
@@ -140,52 +140,51 @@ class Parser
       else
         add_error
       end
-      check_input(NEXT_GROUP[:attribute_value], FIRST_GROUP[:attribute_value], false)
+      check_input(NEXT_GROUP[:attribute_value], FIRST_GROUP[:attribute_value], optional=true)
     end
   end
 
   def array
-    check_input(FIRST_GROUP[:array], NEXT_GROUP[:array], false)
+    check_input(FIRST_GROUP[:array], NEXT_GROUP[:array])
     unless search_in_group(NEXT_GROUP[:array])
       match(@current_token, L_SQUARE_BRACKET)
       clean_array
       match(@current_token, R_SQUARE_BRACKET)
-      check_input(NEXT_GROUP[:array], FIRST_GROUP[:array], false)
+      check_input(NEXT_GROUP[:array], FIRST_GROUP[:array], optional=true)
     end
   end
 
   def clean_array
-    byebug
-    check_input(FIRST_GROUP[:clean_array], NEXT_GROUP[:clean_array], true)
     unless search_in_group(NEXT_GROUP[:clean_array])
-      element_list unless @current_token.match? R_SQUARE_BRACKET.regular_expresion
-      check_input(NEXT_GROUP[:clean_array], FIRST_GROUP[:clean_array], false)
+      check_input(FIRST_GROUP[:clean_array], NEXT_GROUP[:clean_array], optional=true)
+      element_list # unless @current_token.match? R_SQUARE_BRACKET.regular_expresion
+      check_input(NEXT_GROUP[:clean_array], FIRST_GROUP[:clean_array])
     end
   end
 
   def element_list
-    byebug
-    check_input(FIRST_GROUP[:element_list], NEXT_GROUP[:element_list], false)
+    check_input(FIRST_GROUP[:element_list], NEXT_GROUP[:element_list])
     unless search_in_group(NEXT_GROUP[:element_list])
       element
       clean_list
-      check_input(NEXT_GROUP[:element_list], FIRST_GROUP[:element_list], false)
+      check_input(NEXT_GROUP[:element_list], FIRST_GROUP[:element_list])
     end
   end
 
   def clean_list
-    check_input(FIRST_GROUP[:clean_list], NEXT_GROUP[:clean_list], true)
     unless search_in_group(NEXT_GROUP[:clean_list])
+      check_input(FIRST_GROUP[:clean_list], NEXT_GROUP[:clean_list], optional=true)
       if @current_token.match? COMA.regular_expresion
         match(@current_token, COMA)
         element_list
       end
-      check_input(NEXT_GROUP[:clean_list], FIRST_GROUP[:clean_list], false)
+      check_input(NEXT_GROUP[:clean_list], FIRST_GROUP[:clean_list])
     end
   end
 
   def match(token, token_type)
     return if token.nil?
+
     if token.match? token_type.regular_expresion
       next_token
     else
@@ -202,15 +201,14 @@ class Parser
     @current_token = @tokens[@index]
   end
 
-  def check_input(firsts, follows, optional)
-    return if search_in_group(firsts) || optional
-    byebug
+  def check_input(firsts, follows, optional=false)
+    return if search_in_group(firsts) or optional
+
     print_error
     scan_to(firsts + follows)
   end
 
   def scan_to(synchset)
-    byebug
     status = false
     loop do
       synchset.each do |token|
@@ -238,8 +236,8 @@ class Parser
   end
 
   def print_error
-    @errors << "#{@current_token}: #{@index}"
-    puts "Ocurrio un error en la linea: #{@index}"
+    @errors << "#{@current_token}: #{@line_numbers[@index]}"
+    puts "Ocurrio un error en la linea: #{@line_numbers[@index]}, no se esperaba el token '#{@current_token}'"
   end
 
   def search_in_group(group)

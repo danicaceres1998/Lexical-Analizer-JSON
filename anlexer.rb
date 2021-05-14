@@ -85,7 +85,7 @@ class Lexer
 
   def token_matched(lexeme, token_type)
     add_token(lexeme, token_type)
-    add_lexical_component({ token: lexeme, lex_comp: token_type.lexical_component })
+    add_lexical_component({ token: lexeme, lex_comp: token_type.lexical_component, line_number: @line_number })
   end
 
   def add_lexical_error(lexeme)
@@ -176,7 +176,10 @@ class Lexer
 
   def return_tokens
     clean_lexical_comp_list
-    @lexical_comp_list.reduce([]) { |acc, el| acc << el[:token] }
+    {
+      tokens: @lexical_comp_list.reduce([]) { |acc, el| acc << el[:token] },
+      line_number: @lexical_comp_list.reduce([]) { |acc, el| acc << el[:line_number] }
+    }
   end
 end
 

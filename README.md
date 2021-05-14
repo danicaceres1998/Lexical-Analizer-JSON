@@ -14,3 +14,14 @@ Para instalar Ruby puede ir a [ruby-lang.org](https://www.ruby-lang.org/en/downl
 
 **¿Por qué Ruby?**<br/>
 Ruby es un lenguaje de programación dinámico e interpretado, enfocado a la simplicidad y productividad. Gracias a su elegante sintaxis, que se siente natural, es muy fácil escribir y leer código Ruby, es por ello que elegí este lenguaje para poder realizar un desarrollo ágil y robusto. Otra de las razones principales por la que se eligió este lenguaje es gracias a que soporta el manejo de expresiones regulares como tipo de dato, lo cual facilita la validación de tokens.
+
+# Analizador Sintactico JSON
+_Lenguaje_: Ruby<br/>
+_Versión Utilizada_: 2.7.2<br/>
+_Versión Mínima_ >= 2.5.0<br/>
+_Autores_: Juan Daniel Ojeda Cáceres, Mario Ruben Villalba<br/>
+_Ejecución_: ruby parser.rb source.json<br/>
+_Resultado_: el resultado de compilación se mostrara en pantalla
+
+**Uso en Linea**<br/>
+Para poder correr el script en linea se deben de copiar los archivos _parser.rb_ (el contenido de este script debe de ir directamente en el editor), _anlexer.rb_ , *simbols_helper.rb* y _source.json_ (en estos tres últimos archivos se debe de copiar el contenido de los mismos a través del editor vim de la terminal, como ya fue explicado en las especificaciones del analizador léxico). Una vez copiados los archivos, ya puede correr el comando de ejecucion (en este caso seria "_ruby main.rb source.json_").
