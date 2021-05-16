@@ -182,7 +182,7 @@ class Translator
   end
 
   def put_break_line
-    @output_file.write(LINE_BREAK) if @index != INIT
+    @output_file.write(LINE_BREAK)
   end
 end
 
