@@ -33,11 +33,6 @@ class Translator
     end
   end
 
-  def parse_file(file)
-    @file = file
-    init_parser(false)
-  end
-
   private
 
   def init_translation
