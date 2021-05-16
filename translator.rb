@@ -1,5 +1,4 @@
 require_relative 'parser'
-require 'pry'
 
 class Translator
   include SimbolsHelper
@@ -176,7 +175,7 @@ class Translator
   end
 
   def build_output
-    puts "\n[INFO]: El resultado se encuentra en -> #{CURRENT_PATH + "/#{DEFAULT_OUTPUT_FILE}"}"
+    puts "[INFO]: El resultado se encuentra en -> #{CURRENT_PATH + "/#{DEFAULT_OUTPUT_FILE}"}"
   end
 
   def write_file(str)
