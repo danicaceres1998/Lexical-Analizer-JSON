@@ -1,0 +1,29 @@
+### JSON BNF ###
+json                          =>  element
+element                       =>  object | array
+array                         =>  [clean-array]
+clean-array                   =>  element-list | EOF
+element-list                  =>  element clean-list
+clean-list                    =>  , element-list | EOF
+object                        =>  {clean-object}
+clean-object                  =>  attributes-list | EOF
+attributes-list               =>  attribute clean-attributes-list
+clean-attributes-list         =>  , attributes-list | EOF
+attribute                     =>  attribute-name : attribute-value
+attribute-name                =>  string
+attribute-value               =>  element | string | number | true | false | null
+
+### JSON to XML TRANSLATE BNF ###
+json.trad                     =>  element.trad
+element.trad                  =>  object.trad | array.trad
+array.trad                    =>  clean-array.trad
+clean-array.trad              =>  element-list.trad | EOF
+element-list.trad             =>  <item>element.trad</item> clean-list.trad
+clean-list.trad               =>  clean-array.trad | EOF
+object.trad                   =>  clean-object.trad
+clean-object.trad             =>  attributes-list.trad | EOF
+attributes-list.trad          =>  attribute.trad clean-attributes-list.trad
+clean-attributes-list.trad    =>  attributes-list.trad | EOF
+attribute.trad                =>  <attribute-name>attribute-value</attribute-name>
+attribute-name                =>  string.trad
+attribute-value               =>  element.trad | string.trad | number.trad | true.trad | false.trad | null.trad

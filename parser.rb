@@ -2,6 +2,8 @@ require_relative 'anlexer'
 
 class Parser
   include SimbolsHelper
+  PARSER_ERROR = '[ERROR]: Ocurrieron errores de compilacion'.freeze
+  PARSER_INFO = '[INFO]: No ocurrio ningun error de compilacion'.freeze
 
   def initialize
     super
@@ -11,7 +13,6 @@ class Parser
     @line_numbers = nil
     @current_token = nil
     @index = 0
-    @str_to_evaluate = ''
     @errors = []
   end
 
@@ -26,21 +27,32 @@ class Parser
         puts "[ERROR]: El archivo #{ARGV.first} no existe !"
         exit 1
       end
-      init_parser
+      init_parser(true)
     end
+  end
+
+  def parse_file(file)
+    @file = file
+    init_parser(false)
+    @tokens
   end
 
   private
 
-  def init_parser
+  def init_parser(parser_mode)
     lexer_tokens = @lexer.get_tokens(@file)
     @tokens = lexer_tokens[:tokens]
     @line_numbers = lexer_tokens[:line_number]
     @current_token = @tokens.first
     json unless @tokens.empty?
-    puts @errors.empty? ? '[INFO]: No ocurrio ningun error de compilacion' : '[ERROR]: Ocurrieron errores de compilacion'
+    if parser_mode
+      puts @errors.empty? ? PARSER_INFO : PARSER_ERROR
+    else
+      raise StandardError, PARSER_ERROR unless @errors.empty?
+    end
   rescue StandardError => e
     puts e.message
+    raise e unless parser_mode
   end
 
   def json
@@ -55,12 +67,12 @@ class Parser
     check_input(FIRST_GROUP[:element], NEXT_GROUP[:element])
     unless search_in_group(NEXT_GROUP[:element])
       case @current_token
-      when L_CURLY_BRACE.lexeme
+      when L_CURLY_BRACE.regular_expresion
         object
-      when L_SQUARE_BRACKET.lexeme
+      when L_SQUARE_BRACKET.regular_expresion
         array
       else
-        add_error
+        print_error
       end
       check_input(NEXT_GROUP[:element], FIRST_GROUP[:element], optional=true)
     end
@@ -69,9 +81,9 @@ class Parser
   def object
     check_input(FIRST_GROUP[:object], NEXT_GROUP[:object])
     unless search_in_group(NEXT_GROUP[:object])
-      match(@current_token, L_CURLY_BRACE)
+      match(L_CURLY_BRACE)
       clean_object
-      match(@current_token, R_CURLY_BRACE)
+      match(R_CURLY_BRACE)
       check_input(NEXT_GROUP[:object], FIRST_GROUP[:object], optional=true)
     end
   end
@@ -79,7 +91,7 @@ class Parser
   def clean_object
     unless search_in_group(NEXT_GROUP[:clean_object])
       check_input(FIRST_GROUP[:clean_object], NEXT_GROUP[:clean_object])
-      attributes_list # unless @current_token.match? R_CURLY_BRACE.regular_expresion
+      attributes_list
       check_input(NEXT_GROUP[:clean_object], FIRST_GROUP[:clean_object])
     end
   end
@@ -97,7 +109,7 @@ class Parser
     unless search_in_group(NEXT_GROUP[:clean_attributes_list])
       check_input(FIRST_GROUP[:clean_attributes_list], NEXT_GROUP[:clean_attributes_list], optional=true)
       if @current_token.match? COMA.regular_expresion
-        match(@current_token, COMA)
+        match(COMA)
         attributes_list
       end
       check_input(NEXT_GROUP[:clean_attributes_list], FIRST_GROUP[:clean_attributes_list])
@@ -108,7 +120,7 @@ class Parser
     check_input(FIRST_GROUP[:attribute], NEXT_GROUP[:attribute])
     unless search_in_group(NEXT_GROUP[:attribute])
       attribute_name
-      match(@current_token, TWO_POINTS)
+      match(TWO_POINTS)
       attribute_value
       check_input(NEXT_GROUP[:attribute], FIRST_GROUP[:attribute], optional=true)
     end
@@ -117,7 +129,7 @@ class Parser
   def attribute_name
     check_input(FIRST_GROUP[:attribute_name], NEXT_GROUP[:attribute_name])
     unless search_in_group(NEXT_GROUP[:attribute_name])
-      match(@current_token, LITERAL_STRING)
+      match(LITERAL_STRING)
       check_input(NEXT_GROUP[:attribute_name], FIRST_GROUP[:attribute_name])
     end
   end
@@ -125,22 +137,23 @@ class Parser
   def attribute_value
     check_input(FIRST_GROUP[:attribute_value], NEXT_GROUP[:attribute_value])
     unless search_in_group(NEXT_GROUP[:attribute_value])
-      if @current_token.match? L_SQUARE_BRACKET.regular_expresion
+      case @current_token
+      when L_SQUARE_BRACKET.regular_expresion
         element
-      elsif @current_token.match? L_CURLY_BRACE.regular_expresion
+      when L_CURLY_BRACE.regular_expresion
         element
-      elsif @current_token.match? LITERAL_STRING.regular_expresion
-        match(@current_token, LITERAL_STRING)
-      elsif @current_token.match? LITERAL_NUMBER.regular_expresion
-        match(@current_token, LITERAL_NUMBER)
-      elsif @current_token.match? PR_TRUE.regular_expresion
-        match(@current_token, PR_TRUE)
-      elsif @current_token.match? PR_FALSE.regular_expresion
-        match(@current_token, PR_FALSE)
-      elsif @current_token.match? PR_NULL.regular_expresion
-        match(@current_token, PR_NULL)
+      when LITERAL_STRING.regular_expresion
+        match(LITERAL_STRING)
+      when LITERAL_NUMBER.regular_expresion
+        match(LITERAL_NUMBER)
+      when PR_TRUE.regular_expresion
+        match(PR_TRUE)
+      when PR_FALSE.regular_expresion
+        match(PR_FALSE)
+      when PR_NULL.regular_expresion
+        match(PR_NULL)
       else
-        add_error
+        print_error
       end
       check_input(NEXT_GROUP[:attribute_value], FIRST_GROUP[:attribute_value], optional=true)
     end
@@ -149,9 +162,9 @@ class Parser
   def array
     check_input(FIRST_GROUP[:array], NEXT_GROUP[:array])
     unless search_in_group(NEXT_GROUP[:array])
-      match(@current_token, L_SQUARE_BRACKET)
+      match(L_SQUARE_BRACKET)
       clean_array
-      match(@current_token, R_SQUARE_BRACKET)
+      match(R_SQUARE_BRACKET)
       check_input(NEXT_GROUP[:array], FIRST_GROUP[:array], optional=true)
     end
   end
@@ -159,7 +172,7 @@ class Parser
   def clean_array
     unless search_in_group(NEXT_GROUP[:clean_array])
       check_input(FIRST_GROUP[:clean_array], NEXT_GROUP[:clean_array], optional=true)
-      element_list # unless @current_token.match? R_SQUARE_BRACKET.regular_expresion
+      element_list
       check_input(NEXT_GROUP[:clean_array], FIRST_GROUP[:clean_array])
     end
   end
@@ -177,25 +190,21 @@ class Parser
     unless search_in_group(NEXT_GROUP[:clean_list])
       check_input(FIRST_GROUP[:clean_list], NEXT_GROUP[:clean_list], optional=true)
       if @current_token.match? COMA.regular_expresion
-        match(@current_token, COMA)
+        match(COMA)
         element_list
       end
       check_input(NEXT_GROUP[:clean_list], FIRST_GROUP[:clean_list])
     end
   end
 
-  def match(token, token_type)
-    return if token.nil?
+  def match(token_type)
+    return if @current_token.nil?
 
-    if token.match? token_type.regular_expresion
+    if @current_token.match? token_type.regular_expresion
       next_token
     else
-      add_error
+      print_error
     end
-  end
-
-  def add_error
-    print_error
   end
 
   def next_token

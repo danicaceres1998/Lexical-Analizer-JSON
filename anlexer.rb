@@ -19,11 +19,6 @@ class Lexer
     @errors = []
   end
 
-  def get_tokens(file)
-    @file = file
-    init_lexer(false)
-  end
-
   def main
     if ARGV.first.nil?
       puts '[ERROR]: Debe de pasar como parametro el path al archivo fuente !'
@@ -37,6 +32,11 @@ class Lexer
       end
       init_lexer(true)
     end
+  end
+
+  def get_tokens(file)
+    @file = file
+    init_lexer(false)
   end
 
   private
